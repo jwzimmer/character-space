@@ -2,12 +2,23 @@ from __future__ import annotations
 
 import json
 import os
+import re
 
 import nltk
+from nltk.corpus import stopwords as sw
 
 import parameters as p
 
+# You can comment out the below after you've run the code once. It saves
+# files the nltk library needs in an nltk specific directory in your home
+# directory. If you don't like having that directory there, you can just
+# delete it after you've used the nltk library to run some code and it won't
+# cause any problems.
+nltk.download('averaged_perceptron_tagger')
 nltk.download('punkt')
+nltk.download('stopwords')
+nltk.download('tagsets')
+nltk.download('wordnet')
 
 
 def main(config_file_path):
@@ -21,8 +32,7 @@ def generate_data(
         config: dict
 ):
     texts, compounding_dicts, char_names = load_input_data(config)
-    processed_texts = preprocess_texts(config, texts, compounding_dicts)
-    tokenized_texts = tokenize_texts(config, processed_texts)
+    tokenized_texts = tokenize_texts(config, texts, compounding_dicts)
     process_texts(config, tokenized_texts, char_names)
 
 
@@ -80,7 +90,7 @@ def load_input_data(
         filepath = os.path.join(input_directory, filename)
         with open(filepath, 'r') as file:
             text = file.read()
-        texts[filename[:-4]] = text
+        texts[filename[:-4]] = text.lower()
 
     for filename in json_filenames:
         filepath = os.path.join(input_directory, filename)
@@ -136,36 +146,56 @@ def load_input_data(
     return texts, compounding_dicts, char_names
 
 
-def preprocess_texts(
+def tokenize_texts(
         config: dict,
         texts: dict[str, str],
         compounding_dicts: dict[str, dict[str, str]]
-) -> dict[str, str]:
+) -> dict[str, list[str]]:
 
     processed_texts = dict()
 
     for title, text in texts.items():
 
         # Make all replacements specified in compounding dictionary for text
-        for current, replacement in compounding_dicts.items():
-            text = text.replace(current, replacement)
+        if compounding_dicts[title] is not None:
+            for current, replacement in compounding_dicts[title].items():
+                text = text.replace(current, replacement)
 
         # Tokenize Text
-        tokenized_text = nltk.to
+        tokenized_text = text.split()
 
-        # Process pronouns
-        pass
+        # Remove non-alphanumeric characters and convert to lower case
+        cleaned_tokenized_text = list()
+        for token in tokenized_text:
+            cleaned_token = ''.join(c for c in token if c.isalpha())
+            if cleaned_token != '':
+                cleaned_tokenized_text.append(cleaned_token.lower())
 
-    return dict()
+        # Remove stop words
+        if config["Remove Stop Words"]:
+            if config["Process Pronouns"]:
+                raise ValueError(
+                    "If you opt to remove stop words, then you can't also "
+                    "process pronouns. Removal of stopwords also removes "
+                    "pronouns."
+                )
+            stopwords = sw.words('english')
+            cleaned_stopwords = list()
+            for word in stopwords:
+                cleaned_word = ''.join(c for c in word if c.isalpha())
+                cleaned_stopwords.append(cleaned_word)
+            cleaned_tokenized_text = (
+                [w for w in cleaned_tokenized_text
+                 if w not in cleaned_stopwords]
+            )
 
+        if config["Process Pronouns"]:
+            # TODO: Process pronouns - come back to this later.
+            pass
 
-def tokenize_texts(
-        config: dict,
-        texts: dict[str, str]
-) -> dict[str, list[str]]:
-    pass
+        processed_texts[title] = cleaned_tokenized_text
 
-    return dict()
+    return processed_texts
 
 
 def process_texts(
@@ -173,7 +203,14 @@ def process_texts(
         tokenized_texts: dict[str, list[str]],
         char_names: dict[str, list[str]]
 ):
-    pass
+    # Storage structure...
+
+    for title, text in tokenized_texts.items():
+        pass
+
+        # tag with pos
+
+
 
 
 if __name__ == '__main__':
