@@ -70,4 +70,4 @@ for name in possible_words2:
 big_dict["compounding_dict"] = compounding_dict
 
 with open('big_dict.json', 'w') as f:
-    json.dump(big_dict, f)
+    json.dump(big_dict, f, indent=4, sort_keys=True)
