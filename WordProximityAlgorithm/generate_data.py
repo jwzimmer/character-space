@@ -5,6 +5,7 @@ import os
 import re
 
 import nltk
+from nltk import pos_tag
 from nltk.corpus import stopwords as sw
 
 import parameters as p
@@ -21,16 +22,16 @@ nltk.download('tagsets')
 nltk.download('wordnet')
 
 
-def main(config_file_path):
-    with open(config_file_path, 'r') as file:
-        config = json.load(file)
-
-    generate_data(config)
+def main():
+    generate_data(None)
 
 
 def generate_data(
-        config: dict
+        config: dict | None
 ):
+    if config is None:
+        config = p.DEFAULT_CONFIG_FILE
+
     texts, compounding_dicts, char_names = load_input_data(config)
     tokenized_texts = tokenize_texts(config, texts, compounding_dicts)
     process_texts(config, tokenized_texts, char_names)
@@ -203,12 +204,70 @@ def process_texts(
         tokenized_texts: dict[str, list[str]],
         char_names: dict[str, list[str]]
 ):
-    # Storage structure...
+    # get dictionary of ttts: tagged tokenized texts
+    ttts = {
+        title: pos_tag(tokenized_text)
+        for title, tokenized_text in tokenized_texts.items()
+    }
 
-    for title, text in tokenized_texts.items():
-        pass
+    pos = config["Included Parts of Speech"]
 
-        # tag with pos
+    # Create list of all words whose relationships to characters we will
+    # collect data on.
+    neighbors = list()
+    for title, ttt in ttts.items():
+        neighbors += [
+            tagged_word[0] for tagged_word in ttt
+            if (tagged_word[1] in pos)
+        ]
+    neighbors = list(set(neighbors))
+
+    # Get list of all character names in all texts:
+    all_char_names = list()
+    for title, names in char_names.items():
+        all_char_names += names
+    all_char_names = list(set(all_char_names))
+
+    # Create data structure to store proximity of neighbors to character names
+    data = {
+        name: {neighbor: list() for neighbor in neighbors}
+        for name in all_char_names
+    }
+
+    # Get maximum distance forwards and backwards to search
+    window = config["Proximity Window"]
+
+    for title, ttt in ttts.items():
+        # We will not check the relationship of other character names to our
+        # targets for embedding, and we will see if our configuration file
+        # includes other words to not embed.
+        excluded_words = char_names[title] + config["Words to Exclude"]
+
+        for i, word in enumerate(ttt):
+            # See if the word is in our local list of names. If not,
+            # we're done with this word
+            if word[0] not in char_names[title]:
+                continue
+
+            # Find the first and last index of the window
+            i_first = i - window
+            if i_first < 0:
+                i_first = 0
+            i_last = i + window
+            if i_last >= len(ttt):
+                i_last = len(ttt)-1
+
+            # Update data with the distance of neighbor words in the window
+            # from the character name, if they are an appropriate pos
+            for j in list(range(i_first, i)) + list(range(i, i_last+1)):
+                if ttt[j][1] in pos and ttt[j][0] not in excluded_words:
+                    data[word[0]][ttt[j][0]].append(
+                        (window - (abs(i-j)-1))
+                    )
+
+    pass
+
+
 
 
 
