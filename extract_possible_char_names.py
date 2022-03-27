@@ -1,10 +1,11 @@
-#pip install -U textblob
+#pip3 install -U textblob
 
 from textblob import TextBlob
 import re
 import pandas as pd
 from collections import Counter
 import json
+import os
 
 def pad_punctuation(text):
   punc_list = ["!","&",".","?",",","-","——","(",")","~","—",'"',"_",":",";"]
@@ -16,58 +17,85 @@ def pad_punctuation(text):
   return words, punc_from_text
 
 # Open the text file for the book
-text = open("prideandprejudice.txt")
-text = text.read()
-text = text.lower()
+def open_book_text_file(filename):
+  text = open(filename)
+  text = text.read()
+  text = text.lower()
+  return text
 
-blob = TextBlob(text)
+def iterate_through_text_files(directory_in_str):
+  directory = os.fsencode(directory_in_str)
+  for file in os.listdir(directory):
+    filename = os.fsdecode(file)
+    text = open_book_text_file(
+      os.path.join(directory_in_str, filename)
+    )
+    make_char_name_dict(text, filename)
 
-tag_dict = {}
-for tup in blob.tags:
-  tag_dict[tup[0]] = tup[1]
+def make_char_name_dict(text, filename):
+  blob = TextBlob(text)
 
-# Load whatever dictionaries you want to use
-labmt_word_df = pd.read_csv("labmt.txt",sep="\t")
-pds_word_df = pd.read_csv("http://pdodds.w3.uvm.edu/permanent-share/ousiometry_data.txt", sep="\t")
-all_words = set(list(pds_word_df["word"])).union(set(list(labmt_word_df["word"])))
+  tag_dict = {}
+  for tup in blob.tags:
+    tag_dict[tup[0]] = tup[1]
 
-possible_names = []
-prefixes = ["mr. ", "mrs. ", "miss ", "mister ", "ms. ", "madame ", "lady ", "sir "]
-for n in pap_blob.noun_phrases:
-  for prefix in prefixes:
-    if prefix in n:
-      pattern = re.compile(r'\b'+prefix+'[a-z]*[\s[a-z]*]*')
-      match = re.search(pattern, n)
-      #print(n)
-      possible_names.append(match.group())
-    else: pass
-  new_word = ""
-  for word in n.split():
-    if word in tag_dict.keys():
-      if tag_dict[word] == "NN":
-        if word not in all_words:
-          new_word += " " + word
-    else:
-      pass
-  #print(new_word)
-  possible_names.append(new_word)
+  # dictionary file from https://www.keithv.com/software/wlist/
+  with open("parsed_dict.txt") as file:
+    all_words = []
+    for i, line in enumerate(file):
+      #print(i)
+      try:
+        all_words.append(line.rstrip().lower())
+      except Exception as e:
+        print('******************')
+        print('Found error')
+        print(e)
+        print('******************')
+    all_words = set(all_words)
 
-name_counts = Counter(possible_names)
 
-possible_names2 = []
-for word in name_counts:
-  if name_counts[word] < 2: pass
-  else: possible_names2.append(word)
 
-big_dict = {"char_names":[]}
-for name in possible_words2:
-  big_dict["char_names"].append(name)
+  possible_names = []
+  prefixes = ["mr. ", "mrs. ", "miss ", "mister ", "ms. ", "madame ", "lady ", "sir "]
+  for n in blob.noun_phrases:
+    for prefix in prefixes:
+      if prefix in n:
+        pattern = re.compile(r'\b'+prefix+'[a-z]*[\s[a-z]*]*')
+        match = re.search(pattern, n)
+        #print(n)
+        possible_names.append(match.group())
+      else: pass
+    new_word = ""
+    for word in n.split():
+      if word in tag_dict.keys():
+        if tag_dict[word] == "NN":
+          if word not in all_words:
+            new_word += " " + word
+      else:
+        pass
+    #print(new_word)
+    possible_names.append(new_word)
 
-compounding_dict = {}
-for name in possible_words2:
-  compounding_dict[name] = name
+  name_counts = Counter(possible_names)
 
-big_dict["compounding_dict"] = compounding_dict
+  possible_names2 = []
+  for word in name_counts:
+    if name_counts[word] < 2: pass
+    else: possible_names2.append(word)
 
-with open('big_dict.json', 'w') as f:
-    json.dump(big_dict, f, indent=4, sort_keys=True)
+  big_dict = {"char_names":[]}
+  for name in possible_names2:
+    big_dict["char_names"].append(name)
+
+  compounding_dict = {}
+  for name in possible_names2:
+    compounding_dict[name] = name
+
+  big_dict["compounding_dict"] = compounding_dict
+
+  with open('char_name_dict_'+filename+'.json', 'w') as f:
+      json.dump(big_dict, f, indent=4, sort_keys=True)
+
+if __name__ == '__main__':
+  dirname = "/Users/jzimmer1/Documents/GitHub/character-space/TestDirectory"
+  iterate_through_text_files(dirname)
