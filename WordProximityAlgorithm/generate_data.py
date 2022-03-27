@@ -9,7 +9,7 @@ import pandas as pd
 from nltk import pos_tag
 from nltk.corpus import stopwords as sw
 
-import parameters as p
+from WordProximityAlgorithm import parameters as p
 
 # You can comment out the below after you've run the code once. It saves
 # files the nltk library needs in an nltk specific directory in your home
