@@ -1,0 +1,16 @@
+{
+  "Input Directory": "./example_input",
+  "Output Directory": "./example_output",
+  "Output File Name": "Le Morte d'Arthur",
+  "Remove Stop Words": false,
+  "Process Pronouns": false,
+  "Proximity Window": 10,
+  "Included Parts of Speech": [
+    "JJ",
+    "JJR",
+    "JJS"
+  ],
+  "Words to Exclude": [
+
+  ]
+}

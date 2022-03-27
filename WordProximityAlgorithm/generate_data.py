@@ -28,7 +28,7 @@ def main():
 
 
 def generate_data(
-        config: dict | None = None
+        config: str | None = None
 ):
     """
     Generates adjacency data for character names in texts with respect to
