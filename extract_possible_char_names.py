@@ -56,11 +56,13 @@ def make_char_name_dict(text, filename):
 
 
   possible_names = []
-  prefixes = ["mr. ", "mrs. ", "miss ", "mister ", "ms. ", "madame ", "lady ", "sir "]
+  prefixes = ["mr. ", "mrs. ", "miss ", "mister ", "ms. ", "madame ", "lady ", "sir ", "doctor ", "dr. ",
+              "reverend ", "rev. ", "lieutenant ", "lt. ", "colonel ", "col. ", "captain ", "missus ",
+              "master ", "mistress ", "hon. ", "honorable ", "general "]
   for n in blob.noun_phrases:
     for prefix in prefixes:
       if prefix in n:
-        pattern = re.compile(r'\b'+prefix+'[a-z]*[\s[a-z]*]*')
+        pattern = re.compile(r'\b'+prefix+'[a-z]*[\s*[a-z]*]*')
         match = re.search(pattern, n)
         #print(n)
         possible_names.append(match.group())
