@@ -99,7 +99,7 @@ def make_char_name_dict(text, filename):
   big_dict["compounding_dict"] = compounding_dict
 
   with open(filename[:-4]+'.json', 'w') as f:
-      json.dump(big_dict, f, indent=4, sort_keys=True)
+      json.dump(big_dict, f, indent=4, sort_keys=True, ensure_ascii=False)
 
 if __name__ == '__main__':
   dirname = "/home/denis/PycharmProjects/character-space/WordProximityAlgorithm/Example/example_input"
