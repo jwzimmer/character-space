@@ -100,5 +100,5 @@ def make_char_name_dict(text, filename):
       json.dump(big_dict, f, indent=4, sort_keys=True)
 
 if __name__ == '__main__':
-  dirname = "/Users/jzimmer1/Documents/GitHub/character-space/TestDirectory"
+  dirname = "/home/denis/PycharmProjects/character-space/WordProximityAlgorithm/Example/example_input"
   iterate_through_text_files(dirname)
