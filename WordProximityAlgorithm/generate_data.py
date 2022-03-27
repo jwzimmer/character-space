@@ -5,6 +5,7 @@ import os
 import re
 
 import nltk
+import pandas as pd
 from nltk import pos_tag
 from nltk.corpus import stopwords as sw
 
@@ -27,19 +28,42 @@ def main():
 
 
 def generate_data(
-        config: dict | None
+        config: dict | None = None
 ):
+    """
+    Generates adjacency data for character names in texts with respect to
+    other words. Arguments used by this method and other methods called by it
+    are passed in via config, which should be the path to a json file. If no
+    config file is passed, the default config file will be used, as specified
+    in parameters.
+    :param config: See the readme file for details on the config file.
+    :return:
+    """
     if config is None:
         config = p.DEFAULT_CONFIG_FILE
+    with open(config, 'r') as file:
+        config = json.load(file)
 
+    # Load in the data from the specified input directory
     texts, compounding_dicts, char_names = load_input_data(config)
+    # Tokenize the input texts
     tokenized_texts = tokenize_texts(config, texts, compounding_dicts)
+    # Generate and save embedding data
     process_texts(config, tokenized_texts, char_names)
 
 
 def load_input_data(
         config: dict
 ) -> tuple[dict[str, str], dict[str, dict[str, str] | None], dict[str, list[str]]]:
+    """
+    Scans the input directory specified in the config file, reading pairs of
+    json and text files to create the three basic data structures required
+    for tokenization and processing: the text files themselves, lists of
+    character names to map, and a set of transformations to be performed on
+    the text prior to tokenization.
+    :param config: See the readme file for details on the config file.
+    :return:
+    """
     # Get input directory
     input_directory = config["Input Directory"]
     if input_directory is None:
@@ -79,6 +103,13 @@ def load_input_data(
                 f"file."
             )
 
+    # Verify that we have a 1:1 ratio of json files to text files:
+    if len(text_filenames) != len(json_filenames):
+        raise ValueError(
+            "There are more json files than txt files in the input directory. "
+            "Something fishy is going on..."
+        )
+
     # process input files and load data into dictionaries to return
     # The contents of the text files as single strings
     texts = dict()
@@ -87,12 +118,16 @@ def load_input_data(
     # Dictionaries of transformations to perform before tokenizing
     compounding_dicts = dict()
 
+    # Iterate through text files and load their contents into texts,
+    # using titles as keys
     for filename in text_filenames:
         filepath = os.path.join(input_directory, filename)
         with open(filepath, 'r') as file:
             text = file.read()
         texts[filename[:-4]] = text.lower()
 
+    # Iterate through json files and load their contents into char_names and
+    # compounding_dicts, using titles as keys
     for filename in json_filenames:
         filepath = os.path.join(input_directory, filename)
         with open(filepath, 'r') as file:
@@ -142,6 +177,11 @@ def load_input_data(
                     f"Type of character name {char_name} in file {filename} is "
                     f"not string."
                 )
+        if not json_data['char_names']:
+            raise ValueError(
+                f"No character names were provided for {filename[:-5]}. There "
+                f"is nothing for the algorithm to embed."
+            )
         char_names[filename[:-5]] = json_data['char_names']
 
     return texts, compounding_dicts, char_names
@@ -152,9 +192,24 @@ def tokenize_texts(
         texts: dict[str, str],
         compounding_dicts: dict[str, dict[str, str]]
 ) -> dict[str, list[str]]:
+    """
+    Converts the strings in texts into lists of strings comprising words,
+    after first performing any transformations specified in compounding_dicts.
+    :param config: See the readme file for details on the config file.
+    :param texts: A dictionary whose keys are the titles of books, and whose
+    values are single strings containing the entire unprocessed text.
+    :param compounding_dicts: A dictionary whose keys are the titles of
+    books, and whose values are dictionaries. Each of these dictionaries
+    describe a transformation to be performed on the text prior to
+    tokenizing, with the keys being strings to be replaced, and the values
+    being the string to replace them with.
+    :return:
+    """
 
+    # Create a dictionary to store the results.
     processed_texts = dict()
 
+    # Iterate through each book and process it.
     for title, text in texts.items():
 
         # Make all replacements specified in compounding dictionary for text
@@ -169,11 +224,13 @@ def tokenize_texts(
         cleaned_tokenized_text = list()
         for token in tokenized_text:
             cleaned_token = ''.join(c for c in token if c.isalpha())
+            # Exclude empty tokens...
             if cleaned_token != '':
                 cleaned_tokenized_text.append(cleaned_token.lower())
 
-        # Remove stop words
+        # Optionally Remove stop words
         if config["Remove Stop Words"]:
+            # But not if we want to work with the pronouns!
             if config["Process Pronouns"]:
                 raise ValueError(
                     "If you opt to remove stop words, then you can't also "
@@ -181,6 +238,8 @@ def tokenize_texts(
                     "pronouns."
                 )
             stopwords = sw.words('english')
+            # The list of nltk stopwords includes some apostrophes, so we'll
+            # clean those out...
             cleaned_stopwords = list()
             for word in stopwords:
                 cleaned_word = ''.join(c for c in word if c.isalpha())
@@ -190,8 +249,10 @@ def tokenize_texts(
                  if w not in cleaned_stopwords]
             )
 
+        # We could potentially replace pronouns with the most likely nouns
+        # via some algorithm...
         if config["Process Pronouns"]:
-            # TODO: Process pronouns - come back to this later.
+            # TODO: Process pronouns - Not implemented at this time.
             pass
 
         processed_texts[title] = cleaned_tokenized_text
@@ -204,13 +265,32 @@ def process_texts(
         tokenized_texts: dict[str, list[str]],
         char_names: dict[str, list[str]]
 ):
+    """
+    Looks for specified character names in the associated text. When a
+    character name is found, searches in either direction for words that are
+    the correct part of speech (e.g. adjectives, adverbs - specified in
+    config file. The distance of these words from the character name are then
+    recorded.
+    :param config: See the readme file for details on the config file.
+    :param tokenized_texts: A dictionary whose keys are titles and values are
+    lists of the words of the book in sequence.
+    :param char_names: A dictionary whose keys are titles and whose values
+    are lists of the character names to embed.
+    :return:
+    """
     # get dictionary of ttts: tagged tokenized texts
     ttts = {
         title: pos_tag(tokenized_text)
         for title, tokenized_text in tokenized_texts.items()
     }
 
+    # Get parts of speech used to select words of space in which to embed
+    # character names.
     pos = config["Included Parts of Speech"]
+    if not pos:
+        raise ValueError(
+            "No parts of speech were specified for embedding."
+        )
 
     # Create list of all words whose relationships to characters we will
     # collect data on.
@@ -265,12 +345,27 @@ def process_texts(
                         (window - (abs(i-j)-1))
                     )
 
-    pass
+    # Save data
+    output_directory = config["Output Directory"]
+    if output_directory is None:
+        output_directory = p.OUTPUT_DIR
 
+    # Identify and verify existence of input directory
+    if not os.path.exists(output_directory):
+        raise ValueError(
+            f"Input directory {output_directory} not found."
+        )
 
-
-
+    # Save results as json file in output directory
+    file_path = os.path.join(
+        output_directory,
+        f"{config['Output File Name']}, "
+        f"{pd.Timestamp.now().strftime('%Y-%m-%d %H:%M')}"
+        f".json"
+    )
+    with open(file_path, 'w') as file:
+        json.dump(data, file, indent=4, sort_keys=True, ensure_ascii=False)
 
 
 if __name__ == '__main__':
-    main(p.DEFAULT_CONFIG_FILE)
+    main()

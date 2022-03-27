@@ -1,15 +1,14 @@
 {
   "Input Directory": null,
+  "Output Directory": null,
+  "Output File Name": "Results",
   "Remove Stop Words": false,
   "Process Pronouns": false,
   "Proximity Window": 10,
   "Included Parts of Speech": [
     "JJ",
     "JJR",
-    "JJS",
-    "RB",
-    "RBR",
-    "RBS"
+    "JJS"
   ],
   "Words to Exclude": [
 
