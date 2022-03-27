@@ -65,7 +65,9 @@ def make_char_name_dict(text, filename):
         pattern = re.compile(r'\b'+prefix+'[a-z]*[\s*[a-z]*]*')
         match = re.search(pattern, n)
         #print(n)
-        possible_names.append(match.group())
+        try:
+          possible_names.append(match.group())
+        except: pass
       else: pass
     new_word = ""
     for word in n.split():
