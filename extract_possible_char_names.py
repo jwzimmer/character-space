@@ -76,7 +76,8 @@ def make_char_name_dict(text, filename):
       else:
         pass
     #print(new_word)
-    possible_names.append(new_word)
+    if new_word != "":
+      possible_names.append(new_word[1:])
 
   name_counts = Counter(possible_names)
 
@@ -86,16 +87,16 @@ def make_char_name_dict(text, filename):
     else: possible_names2.append(word)
 
   big_dict = {"char_names":[]}
-  for name in possible_names2:
+  for name in sorted(possible_names2):
     big_dict["char_names"].append(name)
 
   compounding_dict = {}
-  for name in possible_names2:
+  for name in sorted(possible_names2):
     compounding_dict[name] = name
 
   big_dict["compounding_dict"] = compounding_dict
 
-  with open('char_name_dict_'+filename+'.json', 'w') as f:
+  with open(filename[:-4]+'.json', 'w') as f:
       json.dump(big_dict, f, indent=4, sort_keys=True)
 
 if __name__ == '__main__':
