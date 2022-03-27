@@ -2,27 +2,38 @@ from __future__ import annotations
 
 import json
 import os
+import re
 
 import nltk
+from nltk import pos_tag
+from nltk.corpus import stopwords as sw
 
 import parameters as p
 
+# You can comment out the below after you've run the code once. It saves
+# files the nltk library needs in an nltk specific directory in your home
+# directory. If you don't like having that directory there, you can just
+# delete it after you've used the nltk library to run some code and it won't
+# cause any problems.
+nltk.download('averaged_perceptron_tagger')
 nltk.download('punkt')
+nltk.download('stopwords')
+nltk.download('tagsets')
+nltk.download('wordnet')
 
 
-def main(config_file_path):
-    with open(config_file_path, 'r') as file:
-        config = json.load(file)
-
-    generate_data(config)
+def main():
+    generate_data(None)
 
 
 def generate_data(
-        config: dict
+        config: dict | None
 ):
+    if config is None:
+        config = p.DEFAULT_CONFIG_FILE
+
     texts, compounding_dicts, char_names = load_input_data(config)
-    processed_texts = preprocess_texts(config, texts, compounding_dicts)
-    tokenized_texts = tokenize_texts(config, processed_texts)
+    tokenized_texts = tokenize_texts(config, texts, compounding_dicts)
     process_texts(config, tokenized_texts, char_names)
 
 
@@ -80,7 +91,7 @@ def load_input_data(
         filepath = os.path.join(input_directory, filename)
         with open(filepath, 'r') as file:
             text = file.read()
-        texts[filename[:-4]] = text
+        texts[filename[:-4]] = text.lower()
 
     for filename in json_filenames:
         filepath = os.path.join(input_directory, filename)
@@ -136,36 +147,56 @@ def load_input_data(
     return texts, compounding_dicts, char_names
 
 
-def preprocess_texts(
+def tokenize_texts(
         config: dict,
         texts: dict[str, str],
         compounding_dicts: dict[str, dict[str, str]]
-) -> dict[str, str]:
+) -> dict[str, list[str]]:
 
     processed_texts = dict()
 
     for title, text in texts.items():
 
         # Make all replacements specified in compounding dictionary for text
-        for current, replacement in compounding_dicts.items():
-            text = text.replace(current, replacement)
+        if compounding_dicts[title] is not None:
+            for current, replacement in compounding_dicts[title].items():
+                text = text.replace(current, replacement)
 
         # Tokenize Text
-        tokenized_text = nltk.to
+        tokenized_text = text.split()
 
-        # Process pronouns
-        pass
+        # Remove non-alphanumeric characters and convert to lower case
+        cleaned_tokenized_text = list()
+        for token in tokenized_text:
+            cleaned_token = ''.join(c for c in token if c.isalpha())
+            if cleaned_token != '':
+                cleaned_tokenized_text.append(cleaned_token.lower())
 
-    return dict()
+        # Remove stop words
+        if config["Remove Stop Words"]:
+            if config["Process Pronouns"]:
+                raise ValueError(
+                    "If you opt to remove stop words, then you can't also "
+                    "process pronouns. Removal of stopwords also removes "
+                    "pronouns."
+                )
+            stopwords = sw.words('english')
+            cleaned_stopwords = list()
+            for word in stopwords:
+                cleaned_word = ''.join(c for c in word if c.isalpha())
+                cleaned_stopwords.append(cleaned_word)
+            cleaned_tokenized_text = (
+                [w for w in cleaned_tokenized_text
+                 if w not in cleaned_stopwords]
+            )
 
+        if config["Process Pronouns"]:
+            # TODO: Process pronouns - come back to this later.
+            pass
 
-def tokenize_texts(
-        config: dict,
-        texts: dict[str, str]
-) -> dict[str, list[str]]:
-    pass
+        processed_texts[title] = cleaned_tokenized_text
 
-    return dict()
+    return processed_texts
 
 
 def process_texts(
@@ -173,7 +204,72 @@ def process_texts(
         tokenized_texts: dict[str, list[str]],
         char_names: dict[str, list[str]]
 ):
+    # get dictionary of ttts: tagged tokenized texts
+    ttts = {
+        title: pos_tag(tokenized_text)
+        for title, tokenized_text in tokenized_texts.items()
+    }
+
+    pos = config["Included Parts of Speech"]
+
+    # Create list of all words whose relationships to characters we will
+    # collect data on.
+    neighbors = list()
+    for title, ttt in ttts.items():
+        neighbors += [
+            tagged_word[0] for tagged_word in ttt
+            if (tagged_word[1] in pos)
+        ]
+    neighbors = list(set(neighbors))
+
+    # Get list of all character names in all texts:
+    all_char_names = list()
+    for title, names in char_names.items():
+        all_char_names += names
+    all_char_names = list(set(all_char_names))
+
+    # Create data structure to store proximity of neighbors to character names
+    data = {
+        name: {neighbor: list() for neighbor in neighbors}
+        for name in all_char_names
+    }
+
+    # Get maximum distance forwards and backwards to search
+    window = config["Proximity Window"]
+
+    for title, ttt in ttts.items():
+        # We will not check the relationship of other character names to our
+        # targets for embedding, and we will see if our configuration file
+        # includes other words to not embed.
+        excluded_words = char_names[title] + config["Words to Exclude"]
+
+        for i, word in enumerate(ttt):
+            # See if the word is in our local list of names. If not,
+            # we're done with this word
+            if word[0] not in char_names[title]:
+                continue
+
+            # Find the first and last index of the window
+            i_first = i - window
+            if i_first < 0:
+                i_first = 0
+            i_last = i + window
+            if i_last >= len(ttt):
+                i_last = len(ttt)-1
+
+            # Update data with the distance of neighbor words in the window
+            # from the character name, if they are an appropriate pos
+            for j in list(range(i_first, i)) + list(range(i, i_last+1)):
+                if ttt[j][1] in pos and ttt[j][0] not in excluded_words:
+                    data[word[0]][ttt[j][0]].append(
+                        (window - (abs(i-j)-1))
+                    )
+
     pass
+
+
+
+
 
 
 if __name__ == '__main__':

@@ -1,11 +1,11 @@
 {
   "char_names": [
-    "Frodo",
-    "Aragorn",
-    "Gandalf",
-    "Sam"
+    "frodo",
+    "aragorn",
+    "gandalf",
+    "sam"
   ],
   "compounding_dict": {
-    "Samwise": "Sam"
+    "samwise": "sam"
   }
 }

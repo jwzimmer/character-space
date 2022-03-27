@@ -1,8 +1,8 @@
 {
   "char_names": [
-    "Frodo",
-    "Aragorn",
-    "Gandalf"
+    "frodo",
+    "aragorn",
+    "gandalf"
   ],
   "compounding_dict": null
 }
