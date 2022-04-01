@@ -20,7 +20,6 @@ def pad_punctuation(text):
 def open_book_text_file(filename):
   text = open(filename)
   text = text.read()
-  text = text.lower()
   return text
 
 def iterate_through_text_files(directory_in_str):
@@ -33,13 +32,18 @@ def iterate_through_text_files(directory_in_str):
     make_char_name_dict(text, filename)
 
 def make_char_name_dict(text, filename):
+  uppercase_pattern = re.compile(r'(?<![\.|\!|\?]\s)(?<!")(?<!\n)[A-Z]+[a-z]+', re.MULTILINE)
+  uppercase_names = re.findall(uppercase_pattern, text)
+  uppercase_names = [x.lower() for x in uppercase_names]
+
+  text = text.lower()
+
   blob = TextBlob(text)
 
   tag_dict = {}
   for tup in blob.tags:
     tag_dict[tup[0]] = tup[1]
 
-  # dictionary file from https://www.keithv.com/software/wlist/
   with open("parsed_dict.txt") as file:
     all_words = []
     for i, line in enumerate(file):
@@ -53,9 +57,24 @@ def make_char_name_dict(text, filename):
         print('******************')
     all_words = set(all_words)
 
+  ignore_words = ["the","after","before","in","on","of","herein","whereby","your","my","mine","yours",
+                  "his","her","hers","their","theirs","there","here","him","he","she","they","thine",
+                  "afore","near","next","to","across","between","below","above","beneath","under","this",
+                  "that","those","them","behaviour","colour","whilst","and","as","at","if","but","by",
+                  "do","every","from","had","how","humour","it","yes","no","oh","with","you","then",
+                  "we","what","when","while","st","sir","house","park","madam","ma","mr","mrs","miss",
+                  "mister","ms","madame","lady","doctor","dr","reverend","rev","lieutenant","lt","colonel",
+                  "col","captain","missus","master","mistress","hon","honorable","general","hill",
+                  "monday","tuesday","wednesday","thursday","friday","saturday","sunday",
+                  "january","february","march","april","may","june","july","august","september","october",
+                  "november","december",
+                  "i","ii","iii","iv",
+                  "v","vi","vii","viii","ix","x","xi","xii","xiii","xiv","xv","xvi","xvii","xviii",
+                  "xix","xx","xxi","xxii","xxiii","xxiv","xxv"]
+  ignore_words = set(ignore_words)
+  all_words = all_words.union(ignore_words)
 
-
-  possible_names = []
+  possible_names = [x for x in uppercase_names if x not in ignore_words]
   prefixes = ["mr. ", "mrs. ", "miss ", "mister ", "ms. ", "madame ", "lady ", "sir ", "doctor ", "dr. ",
               "reverend ", "rev. ", "lieutenant ", "lt. ", "colonel ", "col. ", "captain ", "missus ",
               "master ", "mistress ", "hon. ", "honorable ", "general "]
@@ -66,7 +85,10 @@ def make_char_name_dict(text, filename):
         match = re.search(pattern, n)
         #print(n)
         try:
-          possible_names.append(match.group())
+          if match.group()[-1] == " ":
+            pass
+          else:
+            possible_names.append(match.group())
         except: pass
       else: pass
     new_word = ""
@@ -85,7 +107,7 @@ def make_char_name_dict(text, filename):
 
   possible_names2 = []
   for word in name_counts:
-    if name_counts[word] < 2: pass
+    if name_counts[word] < 5: pass
     else: possible_names2.append(word)
 
   big_dict = {"char_names":[]}
@@ -103,4 +125,5 @@ def make_char_name_dict(text, filename):
 
 if __name__ == '__main__':
   dirname = "/home/denis/PycharmProjects/character-space/WordProximityAlgorithm/Example/example_input"
+  #dirname = "/Users/jzimmer1/Documents/GitHub/character-space/TestDirectory"
   iterate_through_text_files(dirname)
