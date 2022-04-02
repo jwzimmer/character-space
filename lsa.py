@@ -9,7 +9,7 @@ from sklearn.decomposition import TruncatedSVD
 import nltk
 nltk.download('stopwords')
 from nltk.corpus import stopwords
-stop_words = stopwords.words('english')
+
 prefixes = ["mr.", "mrs.", "ms.", "dr.", "mme.", "rev.", "lt.", "col.",
             "hon.", "st."]
 
@@ -30,7 +30,8 @@ def run_LSA(text, character_names, prefix_list):
     # tokenization
     tokenized_doc = df['clean_documents'].fillna('').apply(lambda x: x.split())
     # remove stop-words
-    stop_words.append([x[:-1] for x in prefix_list])
+    stop_words = stopwords.words('english')
+    stop_words += [x[:-1] for x in prefix_list]
     tokenized_doc = tokenized_doc.apply(lambda x: [item for item in x if item not in stop_words])
     # de-tokenization
     detokenized_doc = []
@@ -68,11 +69,19 @@ def run_LSA(text, character_names, prefix_list):
         dictionary = vectorizer.get_feature_names()
         encoding_matrix = pd.DataFrame(svd_model.components_, index=["topic_1"], columns=(dictionary)).T
         encoding_matrix = encoding_matrix.sort_values("topic_1",0)
-        encoding_matrix_list.append(encoding_matrix)
-    print(encoding_matrix_list[0])
+        encoding_matrix_list.append(encoding_matrix.T)
+    #print(encoding_matrix_list[0])
     return encoding_matrix_list
 
 def use_LSA_words_in_matrix(encoding_matrix_list, character_names):
+    all_words = []
+    for df in encoding_matrix_list:
+            all_words += list(df.columns)
+    all_words = list(set(all_words))
+    print(all_words[:10])
+    #for word in all_words:
+
+
     return None
 
 if __name__ == '__main__':
@@ -93,4 +102,5 @@ if __name__ == '__main__':
             "caroline",
             "catherine"]}
     character_names = character_names["char_names"]
-    run_LSA(text, character_names, prefixes)
+    enc_matrix_list = run_LSA(text, character_names, prefixes)
+    use_LSA_words_in_matrix(enc_matrix_list, character_names)
