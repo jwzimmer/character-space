@@ -60,7 +60,7 @@ def make_char_name_dict(text, filename):
   ignore_words = ["the","after","before","in","on","of","herein","whereby","your","my","mine","yours",
                   "his","her","hers","their","theirs","there","here","him","he","she","they","thine",
                   "afore","near","next","to","across","between","below","above","beneath","under","this",
-                  "that","those","them","behaviour","colour","whilst","and","as","at","if","but","by",
+                  "that","those","them","behaviour","colour","neighbourhood","whilst","and","as","at","if","but","by",
                   "do","every","from","had","how","humour","it","yes","no","oh","with","you","then",
                   "we","what","when","while","st","sir","house","park","madam","ma","mr","mrs","miss",
                   "mister","ms","madame","lady","doctor","dr","reverend","rev","lieutenant","lt","colonel",
