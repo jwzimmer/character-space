@@ -50,8 +50,11 @@ def run_LSA(text, character_names, prefix_list):
             pattern2 = re.compile(r'\b'+character+r'\'*s+\b')
             if (pattern1.search(contents) or pattern2.search(contents)):
                 new_dict['clean_documents'].append(contents)
-        character_dict_list.append(new_dict)
-    character_df_list = [pd.DataFrame().from_dict(x) for x in character_dict_list]
+        if len(new_dict['clean_documents']) == 0:
+            character_dict_list += ["No contents"]
+        else:
+            character_dict_list.append(new_dict)
+    character_df_list = [pd.DataFrame().from_dict(x) for x in character_dict_list if x != "No contents"]
 
     lsa_output_list = []
     topic_encoded_df_list = []
@@ -59,19 +62,25 @@ def run_LSA(text, character_names, prefix_list):
     for i in range(len(character_df_list)):
         char_df = character_df_list[i]
         char_name = character_names[i]
-        vectorizer = TfidfVectorizer(stop_words='english', smooth_idf=True)
-        X = vectorizer.fit_transform(char_df['clean_documents'])
-        # we want 1 LSA/ SVD topic per set of documents, and 1 set of documents per character name
-        svd_model = TruncatedSVD(n_components=1, algorithm='randomized', n_iter=100, random_state=122)
-        lsa = svd_model.fit_transform(X)
-        lsa_output_list.append(lsa)
-        topic_encoded_df = pd.DataFrame(lsa, columns=[char_name])
-        topic_encoded_df["documents"] = df['clean_documents']
-        topic_encoded_df_list.append(topic_encoded_df)
-        dictionary = vectorizer.get_feature_names()
-        encoding_matrix = pd.DataFrame(svd_model.components_, index=[char_name], columns=(dictionary)).T
-        encoding_matrix = encoding_matrix.sort_values(char_name,0)
-        encoding_matrix_list.append(encoding_matrix.T)
+        if type(char_df) != "str":
+            #vectorizer = TfidfVectorizer(stop_words='english', smooth_idf=True)
+            vectorizer = TfidfVectorizer(smooth_idf=True)
+            X = vectorizer.fit_transform(char_df['clean_documents'])
+            # we want 1 LSA/ SVD topic per set of documents, and 1 set of documents per character name
+            svd_model = TruncatedSVD(n_components=1, algorithm='randomized', n_iter=100, random_state=122)
+            lsa = svd_model.fit_transform(X)
+            lsa_output_list.append(lsa)
+            topic_encoded_df = pd.DataFrame(lsa, columns=[char_name])
+            topic_encoded_df["documents"] = df['clean_documents']
+            topic_encoded_df_list.append(topic_encoded_df)
+            dictionary = vectorizer.get_feature_names_out()
+            encoding_matrix = pd.DataFrame(svd_model.components_, index=[char_name], columns=(dictionary)).T
+            encoding_matrix = encoding_matrix.sort_values(char_name,axis=0)
+            encoding_matrix_list.append(encoding_matrix.T)
+        else:
+            lsa_output_list += ["No contents"]
+            topic_encoded_df_list += ["No contents"]
+            encoding_matrix_list += ["No contents"]
     #print(pd.concat([encoding_matrix_list[0],encoding_matrix_list[1]]))
     return encoding_matrix_list
 
@@ -89,17 +98,10 @@ if __name__ == '__main__':
     text = open(filename)
     text = text.read()
 
-    #character_names = json.loads("/Users/jzimmer1/Documents/GitHub/character-space/prideandprejudice.json")
-    character_names = {
-        "char_names": [
-            "anne",
-            "bennet",
-            "bennets",
-            "bingley",
-            "bourgh",
-            "brighton",
-            "caroline",
-            "catherine"]}
+    character_names = None
+    with open("/Users/jzimmer1/Documents/GitHub/character-space/prideandprejudice.json") as f:
+        character_names = json.loads(f.read())
+    #print(character_names)
     character_names = character_names["char_names"]
     enc_matrix_list = run_LSA(text, character_names, prefixes)
     output_df = use_LSA_words_in_matrix(enc_matrix_list, character_names)
