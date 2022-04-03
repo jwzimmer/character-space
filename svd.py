@@ -42,6 +42,10 @@ def write_array_to_json(numpy_array, filepath):
               indent=4)  ### this saves the array in .json format
     return None
 
+def write_array_to_npy(numpy_array, name):
+    np.save(name, numpy_array)
+    return None
+
 def write_df_to_json(df, filepath):
     df.to_json(filepath)
     return None
@@ -52,6 +56,6 @@ if __name__ == '__main__':
 
     data_df = subtract_mean(data_df)
     df, U, D, V, Sig, X, remakeX = run_SVD(data_df)
-    write_array_to_json(U, "U.json")
-    write_array_to_json(D, "D.json")
-    write_array_to_json(V, "V.json")
+    write_array_to_npy(U, "U.npy")
+    write_array_to_npy(D, "D.npy")
+    write_array_to_npy(V, "V.npy")

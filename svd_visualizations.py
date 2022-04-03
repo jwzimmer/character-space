@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
-import json
 import pandas as pd
+import numpy as np
 
 def vector_barchart(vector_names ,vector ,n ,style="by_mag" ,ascending=False):
     """ vector_names should be the labels for the values in the vector
@@ -28,7 +28,6 @@ def vector_barchart(vector_names ,vector ,n ,style="by_mag" ,ascending=False):
     return vectordf, plotguy
 
 if __name__ == '__main__':
-    with open("/Users/jzimmer1/Documents/GitHub/character-space/V.json") as f:
-        V = json.loads(f.read())
+    V = np.load("V.npy")
     data_df = pd.read_json("/Users/jzimmer1/Documents/GitHub/character-space/lsa.json")
-    vector_barchart(data_df.columns, V[0], 15)
+    vector_barchart(data_df.columns, V[0,:], 15)
