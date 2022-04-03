@@ -47,7 +47,7 @@ def write_df_to_json(df, filepath):
     return None
 
 if __name__ == '__main__':
-    path_to_df_of_data = "to be filled in"
+    path_to_df_of_data = "lsa.json"
     data_df = pd.read_json(path_to_df_of_data)
 
     data_df = subtract_mean(data_df)

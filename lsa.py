@@ -56,33 +56,32 @@ def run_LSA(text, character_names, prefix_list):
     lsa_output_list = []
     topic_encoded_df_list = []
     encoding_matrix_list = []
-    for char_df in character_df_list:
+    for i in range(len(character_df_list)):
+        char_df = character_df_list[i]
+        char_name = character_names[i]
         vectorizer = TfidfVectorizer(stop_words='english', smooth_idf=True)
         X = vectorizer.fit_transform(char_df['clean_documents'])
         # we want 1 LSA/ SVD topic per set of documents, and 1 set of documents per character name
         svd_model = TruncatedSVD(n_components=1, algorithm='randomized', n_iter=100, random_state=122)
         lsa = svd_model.fit_transform(X)
         lsa_output_list.append(lsa)
-        topic_encoded_df = pd.DataFrame(lsa, columns=["topic_1"])
+        topic_encoded_df = pd.DataFrame(lsa, columns=[char_name])
         topic_encoded_df["documents"] = df['clean_documents']
         topic_encoded_df_list.append(topic_encoded_df)
         dictionary = vectorizer.get_feature_names()
-        encoding_matrix = pd.DataFrame(svd_model.components_, index=["topic_1"], columns=(dictionary)).T
-        encoding_matrix = encoding_matrix.sort_values("topic_1",0)
+        encoding_matrix = pd.DataFrame(svd_model.components_, index=[char_name], columns=(dictionary)).T
+        encoding_matrix = encoding_matrix.sort_values(char_name,0)
         encoding_matrix_list.append(encoding_matrix.T)
-    #print(encoding_matrix_list[0])
+    #print(pd.concat([encoding_matrix_list[0],encoding_matrix_list[1]]))
     return encoding_matrix_list
 
 def use_LSA_words_in_matrix(encoding_matrix_list, character_names):
-    all_words = []
+    new_df = pd.DataFrame()
     for df in encoding_matrix_list:
-            all_words += list(df.columns)
-    all_words = list(set(all_words))
-    print(all_words[:10])
-    #for word in all_words:
-
-
-    return None
+        new_df = pd.concat([new_df,df])
+    new_df = new_df.fillna(0)
+    #print(new_df.shape, new_df)
+    return new_df
 
 if __name__ == '__main__':
     #dirname = "/home/denis/PycharmProjects/character-space/WordProximityAlgorithm/Example/example_input"
@@ -103,4 +102,5 @@ if __name__ == '__main__':
             "catherine"]}
     character_names = character_names["char_names"]
     enc_matrix_list = run_LSA(text, character_names, prefixes)
-    use_LSA_words_in_matrix(enc_matrix_list, character_names)
+    output_df = use_LSA_words_in_matrix(enc_matrix_list, character_names)
+    output_df.to_json("lsa.json")
