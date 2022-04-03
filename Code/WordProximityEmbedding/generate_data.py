@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import json
 import os
-import re
 
 import nltk
 import pandas as pd
 from nltk import pos_tag
 from nltk.corpus import stopwords as sw
 
-from WordProximityAlgorithm import parameters as p
+# TODO: eliminate parameters and do everything with default_config.json
+from CodePackages.WordProximityAlgorithm import parameters as p
 
 # You can comment out the below after you've run the code once. It saves
 # files the nltk library needs in an nltk specific directory in your home
