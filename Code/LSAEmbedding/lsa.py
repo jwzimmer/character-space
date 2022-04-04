@@ -22,7 +22,7 @@ def run_LSA(text, character_names, prefix_list):
     # following steps in https://towardsdatascience.com/latent-semantic-analysis-deduce-the-hidden-topic-from-the-document-f360e8c0614b
     text = text.lower()
     text = pad_prefixes(text, prefix_list)
-    documents = text.split(".")
+    documents = text.split(".|!|\?")
     df = pd.DataFrame()
     df["documents"] = documents
     # remove special characters
