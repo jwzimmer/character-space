@@ -1,6 +1,6 @@
 {
-  "Input Directory": null,
-  "Output Directory": null,
+  "Input Directory": "./input",
+  "Output Directory": "./output",
   "Output File Name": "Results",
   "Remove Stop Words": false,
   "Process Pronouns": false,

@@ -8,8 +8,6 @@ import pandas as pd
 from nltk import pos_tag
 from nltk.corpus import stopwords as sw
 
-# TODO: eliminate parameters and do everything with default_config.json
-from CodePackages.WordProximityAlgorithm import parameters as p
 
 # You can comment out the below after you've run the code once. It saves
 # files the nltk library needs in an nltk specific directory in your home
@@ -36,25 +34,28 @@ def generate_data(
     are passed in via config, which should be the path to a json file. If no
     config file is passed, the default config file will be used, as specified
     in parameters.
-    :param config: See the readme file for details on the config file.
+    :param config: See the readme file for details on the config file,
+    and see default_config.json for an example.
     :return:
     """
     if config is None:
-        config = p.DEFAULT_CONFIG_FILE
+        config = "./default_config.json"
     with open(config, 'r') as file:
         config = json.load(file)
 
     # Load in the data from the specified input directory
-    texts, compounding_dicts, char_names = load_input_data(config)
+    texts, compounding_dicts, char_names = _load_input_data(config)
     # Tokenize the input texts
-    tokenized_texts = tokenize_texts(config, texts, compounding_dicts)
+    tokenized_texts = _tokenize_texts(config, texts, compounding_dicts)
     # Generate and save embedding data
-    process_texts(config, tokenized_texts, char_names)
+    _process_texts(config, tokenized_texts, char_names)
 
 
-def load_input_data(
+def _load_input_data(
         config: dict
-) -> tuple[dict[str, str], dict[str, dict[str, str] | None], dict[str, list[str]]]:
+) -> (tuple[dict[str, str],
+            dict[str, dict[str, str] | None],
+            dict[str, list[str]]]):
     """
     Scans the input directory specified in the config file, reading pairs of
     json and text files to create the three basic data structures required
@@ -66,8 +67,6 @@ def load_input_data(
     """
     # Get input directory
     input_directory = config["Input Directory"]
-    if input_directory is None:
-        input_directory = p.INPUT_DIR
 
     # Identify and verify existence of input directory
     if not os.path.exists(input_directory):
@@ -187,7 +186,7 @@ def load_input_data(
     return texts, compounding_dicts, char_names
 
 
-def tokenize_texts(
+def _tokenize_texts(
         config: dict,
         texts: dict[str, str],
         compounding_dicts: dict[str, dict[str, str]]
@@ -260,7 +259,7 @@ def tokenize_texts(
     return processed_texts
 
 
-def process_texts(
+def _process_texts(
         config: dict,
         tokenized_texts: dict[str, list[str]],
         char_names: dict[str, list[str]]
@@ -347,8 +346,6 @@ def process_texts(
 
     # Save data
     output_directory = config["Output Directory"]
-    if output_directory is None:
-        output_directory = p.OUTPUT_DIR
 
     # Identify and verify existence of input directory
     if not os.path.exists(output_directory):
