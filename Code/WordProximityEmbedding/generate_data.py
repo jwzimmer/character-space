@@ -39,7 +39,7 @@ def generate_data(
     :return:
     """
     if config is None:
-        config = "./default_config.json"
+        config = "default_config.json"
     with open(config, 'r') as file:
         config = json.load(file)
 
