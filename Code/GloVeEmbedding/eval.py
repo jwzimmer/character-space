@@ -7,7 +7,6 @@ import torch
 import yaml
 from gensim.models.keyedvectors import KeyedVectors
 from glove import GloVe
-import h5py
 
 
 def load_config():

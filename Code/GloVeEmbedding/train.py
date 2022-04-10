@@ -3,6 +3,9 @@ import pickle
 import os
 from pathlib import Path
 
+import pandas as pd
+from nltk.tokenize import word_tokenize
+
 import yaml
 import matplotlib.pyplot as plt
 import torch
@@ -31,7 +34,7 @@ def parse_args():
 
 
 def load_config():
-    config_filepath = Path(__file__).absolute().parents[1] / "config.yaml"
+    config_filepath = Path(__file__).absolute().parents[0] / "config.yaml"
     with config_filepath.open() as f:
         config_dict = yaml.load(f, Loader=yaml.FullLoader)
     config = argparse.Namespace()
@@ -41,13 +44,19 @@ def load_config():
 
 
 def calculate_cooccurrence(config):
-    with open(config.input_filepath, "rb") as f:
-        corpus = pickle.load(f)
+    try:
+        with open("enwik8.pickle", 'rb') as f:
+            corpus = pickle.load(f)
+    except FileNotFoundError:
+        with open(config.input_filepath, "r") as f:
+            corpus = word_tokenize(f.read())
+        with open("enwik8.pickle", 'wb') as f:
+            pickle.dump(corpus, f)
     vectorizer = Vectorizer.from_corpus(
         corpus=corpus,
         vocab_size=config.vocab_size
     )
-    cooccurrence = CooccurrenceEntries.setup(
+    cooccurrence = CoOccurrenceEntries.setup(
         corpus=corpus,
         vectorizer=vectorizer
     )
@@ -104,12 +113,16 @@ def train_glove(config):
 
 
 def main():
+    print(f"Started: {pd.Timestamp.now()}")
+
     args = parse_args()
     config = load_config()
     if not args.second_step_only:
         calculate_cooccurrence(config)
     if not args.first_step_only:
         train_glove(config)
+
+    print(f"Completed: {pd.Timestamp.now()}")
 
 
 if __name__ == "__main__":

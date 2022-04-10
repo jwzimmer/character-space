@@ -9,6 +9,12 @@ from torch.utils.data import Dataset
 
 @dataclass
 class CoOccurrenceDataset(torch.utils.data.Dataset):
+    """
+    :param token_ids: A tensor containing tuples of two integers - a target
+    token and a context token.
+    :param co_occurr_counts: A tensor containing single floats associated
+    with the associated target token / context token 2-tuples in token_ids.
+    """
     token_ids: torch.Tensor
     co_occurr_counts: torch.Tensor
 
@@ -34,9 +40,16 @@ class HDF5DataLoader:
             chunked_dataset = self.dataset[chunk]
             dataloader = torch.utils.data.DataLoader(
                 dataset=CoOccurrenceDataset(
-                    token_ids=torch.from_numpy(chunked_dataset[:,:2]).long(),
-                    co_occurr_counts=\
-                        torch.from_numpy(chunked_dataset[:,2]).float()
+                    # token_ids will be the first two columns of the dataset
+                    # chunk, corresponding to target tokens and context
+                    # tokens, respectively. Both are in vectorized format
+                    # here, as integers.
+                    token_ids=torch.from_numpy(chunked_dataset[:, :2]).long(),
+                    # co_occur_counts will be the third row of the dataset
+                    # chunk, the floating point value calculated for our
+                    # target token and context token.
+                    co_occurr_counts= \
+                        torch.from_numpy(chunked_dataset[:, 2]).float()
                 ),
                 batch_size=self.batch_size,
                 shuffle=True,

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import field, dataclass
 
 import numpy as np
@@ -24,7 +26,7 @@ class Vocabulary:
     # Tell Vocabulary object it has encountered a new token.
     # If novel, add to lookup dictionaries and token_counts.
     # If not novel, just increment appropriate index of token_counts.
-    def add(self, token: str):
+    def add(self, token: str) -> None:
         if token not in self.token2index:
             index = len(self)
             self.token2index[token] = index
@@ -34,7 +36,7 @@ class Vocabulary:
 
     # Returns a new Vocabulary object containing only the k most frequently
     # occurring tokens, along with their counts in the original Vocabulary.
-    def get_topk_subset(self, k: int):
+    def get_topk_subset(self, k: int) -> Vocabulary:
         tokens = sorted(
             list(self.token2index.keys()),
             key=lambda token: self.token_counts[self[token]],
@@ -57,7 +59,7 @@ class Vocabulary:
     # generates uniform density - useful for co-occurrence matrix
     # construction, where matrix can become extremely large and may need to
     # be processed in segments.
-    def shuffle(self):
+    def shuffle(self) -> None:
         new_index = [i for i in range(len(self))]
         np.random.shuffle(new_index)
         new_token_counts = [None] * len(self)
@@ -68,27 +70,27 @@ class Vocabulary:
         self.token_counts = new_token_counts
 
     # Returns index of token.
-    def get_index(self, token: str):
+    def get_index(self, token: str) -> int:
         return self[token]
 
     # Returns token at index
-    def get_token(self, index: int):
+    def get_token(self, index: int) -> str:
         if not index in self.index2token:
             raise IndexError("Invalid index.")
         return self.index2token[index]
 
     # Returns the value being used to specify unknown tokens
     @property
-    def unk_token(self):
+    def unk_token(self) -> int:
         return self._unk_token
 
     # Returns index of token IF token is in Vocabulary, else returns value
     # associated with unknown token.
-    def __getitem__(self, token: str):
+    def __getitem__(self, token: str) -> int:
         if token not in self.token2index:
             return self._unk_token
         return self.token2index[token]
 
     # Returns number of unique tokens in Vocabulary.
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.token2index)

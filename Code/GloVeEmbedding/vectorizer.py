@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 
 from vocabulary import Vocabulary
@@ -13,8 +15,15 @@ class Vectorizer:
     """
     vocab: Vocabulary
 
+    # Takes a corpus, builds a Vocabulary from it, then constructs and
+    # returns a Vectorizer constructed with a Vocabulary containing the most
+    # frequently occurring vocab_size words in the base Vocabulary.
     @classmethod
-    def from_corpus(cls, corpus: list[str], vocab_size: int = None):
+    def from_corpus(
+            cls,
+            corpus: list[str],
+            vocab_size: int = None
+    ) -> Vectorizer:
         vocab = Vocabulary()
         for token in corpus:
             vocab.add(token)
