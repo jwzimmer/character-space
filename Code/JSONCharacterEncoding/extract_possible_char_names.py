@@ -158,11 +158,13 @@ def _make_char_name_dict(text, output_dir, filename):
     name_counts = Counter(possible_names)
 
     possible_names2 = []
+    possible_names_dict = {}
     for word in name_counts:
         if name_counts[word] < 5:
             pass
         else:
             possible_names2.append(word)
+            possible_names_dict[word] = name_counts[word]
 
     big_dict = {"char_names": []}
     for name in sorted(possible_names2):
@@ -177,6 +179,9 @@ def _make_char_name_dict(text, output_dir, filename):
     file_path = os.path.join(
         output_dir, filename[:-4] + '.json'
     )
+    with open(file_path[:-5] + "_raw_names.json", 'w') as f:
+        json.dump(possible_names_dict, f, indent=4, sort_keys=True, ensure_ascii=False)
+
     with open(file_path, 'w') as f:
         json.dump(big_dict, f, indent=4, sort_keys=True, ensure_ascii=False)
 
